@@ -129,5 +129,169 @@ Output Layer  →  Dense(1, activation='linear')
 ![Seaborn](https://img.shields.io/badge/Seaborn-76B7B2?style=for-the-badge)
 
 ---
+# 🚚 PORTER — Delivery Time Prediction
+### Uncovering operational bottlenecks in last-mile logistics using Neural Networks
+
+---
+
+> **Business Impact:** Identified partner availability — not traffic or weather — as the dominant delivery time driver (r = 0.95), reframing the analytical conclusion from model accuracy to **scheduling and incentive redesign** — directly applicable to any last-mile quick commerce operation.
+
+---
+
+## 📌 Business Problem
+
+Porter is India's largest intra-city logistics platform connecting businesses with delivery partners. With **150,000+ driver-partners** serving **5M+ customers**, even a 5-minute improvement in average delivery time creates measurable customer experience gains at scale.
+
+The challenge: Delivery time has many potential drivers — partner availability, time of day, order volume, restaurant prep time. Without knowing *which factors actually matter*, operational improvements are guesswork.
+
+**The question:** Can we predict delivery time accurately enough to guide operational decisions — and more importantly, *which factors should operations leadership act on?*
+
+---
+
+## 📂 Dataset
+
+| Attribute | Detail |
+|---|---|
+| Total deliveries | 197,792 records |
+| Training set | ~142,000 samples |
+| Test set | 55,431 samples |
+| Target variable | `actual_delivery_time` (minutes) |
+| Key features | On-shift partners, busy partners, outstanding orders, order protocol, cuisine type, city, timestamp |
+| Time range | Multi-year transactional delivery data |
+
+---
+
+## 🔬 Methodology
+
+### 1. Exploratory Data Analysis
+- **Temporal analysis:** Plotted order volume and delivery time by hour-of-day across all records
+- **Correlation analysis:** Computed Pearson r between all numerical features and delivery time
+- **Distribution analysis:** Examined skewness and outliers in key operational metrics
+- **Partner availability breakdown:** Separated on-shift vs. busy partners to understand utilization
+
+### 2. Feature Engineering
+Key derived features:
+- `hour_of_day` — extracted from order timestamp to capture intraday patterns
+- `day_of_week` — captured weekday vs. weekend demand differences
+- `partner_utilization_ratio` — busy partners / on-shift partners (demand pressure signal)
+
+### 3. Neural Network Architecture
+
+```
+Input Layer  → [n features]
+Dense Layer  → 64 units, ReLU activation
+Dense Layer  → 32 units, ReLU activation
+Dense Layer  → 16 units, ReLU activation
+Output Layer → 1 unit (regression — delivery time in minutes)
+Optimizer    → Adam
+Loss         → Mean Squared Error
+```
+
+### 4. Bayesian Hyperparameter Optimization (Optuna)
+- **20 trials** searching over: number of layers, units per layer, dropout rate, learning rate, batch size
+- Objective: minimize validation RMSE
+- Final architecture selected from best trial parameters
+
+---
+
+## 📊 Results
+
+### Model Performance
+
+| Metric | Value |
+|---|---|
+| **RMSE** | **12.85 minutes** |
+| R² | 0.247 |
+| Test samples | 55,431 |
+
+> **Note on R²:** The relatively low R² (0.247) reflects that delivery time in real-world logistics has high inherent variance — weather, traffic, and restaurant prep time introduce noise no model can fully capture from operational data alone. The RMSE of 12.85 minutes establishes a meaningful baseline for scheduling decisions.
+
+### Key EDA Finding — The 7 AM–2 PM Service Gap
+
+**Most critical discovery in the project:**
+
+```
+Hour    |  Avg Order Volume  |  Delivery Time
+--------|--------------------|--------------
+7 AM    |  Near-zero         |  N/A (insufficient volume)
+8 AM    |  Low               |  High variance
+...
+2 PM    |  Near-zero         |  N/A
+3 PM    |  Recovery begins   |  Normalizing
+Peak    |  12 PM–1 PM        |  Longest avg delivery time
+```
+
+A **7 AM–2 PM window of near-zero order volume** was identified — representing a significant underutilization period across the network. This timing misalignment between driver shifts and actual demand suggests either:
+- Drivers are scheduled for early shifts when demand is minimal
+- Incentive structures don't align driver availability with peak demand windows
+
+### Feature Importance — What Actually Drives Delivery Time
+
+| Feature | Correlation with Delivery Time | Insight |
+|---|---|---|
+| `on_shift_partners` | r = **0.95** | Dominant driver — more partners = faster delivery |
+| `busy_partners` | r = **0.95** | Combined availability signal is the #1 bottleneck |
+| Outstanding orders | Moderate | Demand pressure secondary to supply availability |
+| Cuisine type | Low | Food prep time less impactful than assumed |
+| City | Low | Geography less predictive than partner supply |
+
+**Partner availability (on-shift + busy combined) explains the overwhelming majority of delivery time variance.**
+
+---
+
+## 💡 Business Insights & Recommendations
+
+### 1. Reframe the Problem — From Prediction to Scheduling
+The model's most valuable output isn't the delivery time prediction itself — it's the **confirmation that partner supply is the bottleneck**, not demand, cuisine, or geography. This shifts the intervention from "improve the model" to "redesign partner scheduling."
+
+### 2. Fix the 7 AM–2 PM Dead Zone
+The near-zero order volume during this window suggests driver shifts don't align with customer demand curves. **Recommended action:** Shift driver incentive windows to align with demand peaks (lunch rush 12–2 PM, dinner rush 7–9 PM) rather than morning availability.
+
+### 3. Incentivize Availability at Peak Hours
+Since partner availability (r = 0.95) is the dominant predictor, **surge-style availability incentives** during peak demand periods would have a greater ROI than any operational change in restaurant partnerships or routing optimization.
+
+### 4. Apply This Framework to Quick Commerce
+The same analytical approach directly applies to 10-minute delivery operations (Blinkit, Swiggy Instamart, Flipkart Minutes) — where partner availability management is even more critical due to tighter delivery SLAs.
+
+---
+
+## 🛠️ Tech Stack
+
+```
+Python 3.x  |  Pandas  |  NumPy  |  Matplotlib  |  Seaborn
+TensorFlow / Keras (Sequential Neural Network)
+Optuna (Bayesian Hyperparameter Optimization — 20 trials)
+Scikit-learn (preprocessing, train-test split, metrics)
+SciPy (correlation analysis)
+```
+
+---
+
+## 🚀 How to Run
+
+```bash
+# Clone the repo
+git clone https://github.com/KasiMuthuveerappan/Porter-Neural_Networks
+
+# Install dependencies
+pip install pandas numpy matplotlib seaborn tensorflow optuna scikit-learn scipy
+
+# Run the notebook
+jupyter notebook Porter_NeuralNetwork.ipynb
+```
+
+---
+
+## 📁 Repository Structure
+
+```
+├── Porter_NeuralNetwork.ipynb    # Main analysis + model notebook
+├── porter_data.csv               # Delivery records dataset
+└── README.md
+```
+
+---
+
+*Analysed by **Kasi Muthuveerappan** | [LinkedIn](https://www.linkedin.com/in/kasimuthuveerappan/) | [Portfolio](https://kasiportfolio.carrd.co/)*
 
 <p align="center">Made with ❤️ by <b>KASI</b></p>
